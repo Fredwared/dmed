@@ -33,6 +33,13 @@ class ImageData extends Data
             } catch (\RuntimeException) {
                 $url = $disk->url($image->storage_path);
             }
+
+            $endpoint = (string) config('filesystems.disks.s3.endpoint');
+            $publicUrl = (string) config('filesystems.disks.s3.url');
+
+            if ($url && $endpoint && $publicUrl && $endpoint !== $publicUrl) {
+                $url = str_replace($endpoint, $publicUrl, $url);
+            }
         }
 
         return new self(

@@ -24,8 +24,17 @@ class GenerateUploadUrlAction
             ['ContentType' => $mimeType],
         );
 
+        $url = $presigned['url'];
+
+        $endpoint = (string) config('filesystems.disks.s3.endpoint');
+        $publicUrl = (string) config('filesystems.disks.s3.url');
+
+        if ($endpoint && $publicUrl && $endpoint !== $publicUrl) {
+            $url = str_replace($endpoint, $publicUrl, $url);
+        }
+
         return new UploadUrlResponseData(
-            upload_url: $presigned['url'],
+            upload_url: $url,
             file_key: $fileKey,
         );
     }
