@@ -29,6 +29,11 @@ class AuthController extends Controller
      *
      * @unauthenticated
      *
+     * @bodyParam name string required User's name. Max 255 characters. Example: John Doe
+     * @bodyParam email string required User's email. Must be unique. Example: john@example.com
+     * @bodyParam password string required Password. Min 8 characters. Example: password123
+     * @bodyParam password_confirmation string required Must match password. Example: password123
+     *
      * @response 201 {"user":{"id":1,"name":"John Doe","email":"john@example.com","created_at":"2026-02-28T10:00:00.000000Z"},"token":{"token":"1|abc123...","type":"bearer"}}
      * @response 422 scenario="Validation error" {"message":"The email has already been taken.","errors":{"email":["The email has already been taken."]}}
      */
@@ -43,6 +48,9 @@ class AuthController extends Controller
      * Authenticate a user and return an auth token.
      *
      * @unauthenticated
+     *
+     * @bodyParam email string required User's email. Example: john@example.com
+     * @bodyParam password string required User's password. Example: password123
      *
      * @response 200 {"user":{"id":1,"name":"John Doe","email":"john@example.com","created_at":"2026-02-28T10:00:00.000000Z"},"token":{"token":"1|abc123...","type":"bearer"}}
      * @response 422 scenario="Invalid credentials" {"message":"The given data was invalid.","errors":{"email":["These credentials do not match our records."]}}
@@ -76,6 +84,8 @@ class AuthController extends Controller
      *
      * @unauthenticated
      *
+     * @bodyParam email string required User's email address. Example: john@example.com
+     *
      * @response 200 {"message":"Password reset link sent"}
      * @response 422 scenario="Validation error" {"message":"The given data was invalid.","errors":{"email":["We can't find a user with that email address."]}}
      */
@@ -92,6 +102,11 @@ class AuthController extends Controller
      * Reset the user's password using a valid reset token.
      *
      * @unauthenticated
+     *
+     * @bodyParam token string required Reset token from email. Example: abc123def456
+     * @bodyParam email string required User's email. Example: john@example.com
+     * @bodyParam password string required New password. Min 8 characters. Example: newpassword123
+     * @bodyParam password_confirmation string required Must match password. Example: newpassword123
      *
      * @response 200 {"message":"Password reset successfully"}
      * @response 422 scenario="Invalid token" {"message":"The given data was invalid.","errors":{"email":["This password reset token is invalid."]}}

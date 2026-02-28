@@ -30,6 +30,9 @@ class ImageController extends Controller
      *
      * @authenticated
      *
+     * @bodyParam filename string required Original filename. Example: photo.jpg
+     * @bodyParam mime_type string required MIME type. Must be image/jpeg or image/png. Example: image/jpeg
+     *
      * @response 200 {"upload_url":"https://s3.example.com/uploads/1/uuid.jpg?X-Amz-Signature=...","file_key":"uploads/1/uuid.jpg"}
      * @response 422 scenario="Validation error" {"message":"The mime type field must be one of: image/jpeg, image/png.","errors":{"mime_type":["The mime type field must be one of: image/jpeg, image/png."]}}
      * @response 401 scenario="Unauthenticated" {"message":"Unauthenticated."}
@@ -49,6 +52,8 @@ class ImageController extends Controller
      * Duplicate files (same content) return the existing image.
      *
      * @authenticated
+     *
+     * @bodyParam file_key string required S3 file key returned from upload-url endpoint. Example: uploads/1/550e8400-e29b-41d4-a716-446655440000.jpg
      *
      * @response 201 {"id":1,"original_filename":"uuid.jpg","mime_type":"image/jpeg","file_size":204800,"width":null,"height":null,"url":null,"status":"pending","created_at":"2026-02-28T10:00:00.000000Z"}
      * @response 422 scenario="File not found" {"message":"The given data was invalid.","errors":{"file_key":["File not found on storage."]}}

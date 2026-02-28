@@ -32,8 +32,32 @@ endpoints:
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+    bodyParameters:
+      filename:
+        custom: []
+        name: filename
+        description: 'Original filename.'
+        required: true
+        example: photo.jpg
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      mime_type:
+        custom: []
+        name: mime_type
+        description: 'MIME type. Must be image/jpeg or image/png.'
+        required: true
+        example: image/jpeg
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      filename: photo.jpg
+      mime_type: image/jpeg
     fileParameters: []
     responses:
       -
@@ -91,8 +115,20 @@ endpoints:
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+    bodyParameters:
+      file_key:
+        custom: []
+        name: file_key
+        description: 'S3 file key returned from upload-url endpoint.'
+        required: true
+        example: uploads/1/550e8400-e29b-41d4-a716-446655440000.jpg
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      file_key: uploads/1/550e8400-e29b-41d4-a716-446655440000.jpg
     fileParameters: []
     responses:
       -
