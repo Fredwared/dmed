@@ -8,6 +8,7 @@ services:
     container_name: dmed-app
     restart: unless-stopped
     volumes:
+      - .:/var/www/html
       - app-storage:/var/www/html/storage
     env_file: .env
     environment:
@@ -40,6 +41,8 @@ services:
     restart: unless-stopped
     ports:
       - "${APP_PORT:-80}:80"
+    volumes:
+      - ./public:/var/www/html/public
     depends_on:
       app:
         condition: service_healthy
@@ -120,6 +123,7 @@ services:
     entrypoint: []
     command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600 --memory=256
     volumes:
+      - .:/var/www/html
       - app-storage:/var/www/html/storage
     env_file: .env
     environment:
