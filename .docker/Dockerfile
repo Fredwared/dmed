@@ -50,6 +50,8 @@ RUN pecl install redis imagick \
 
 RUN apk del $PHPIZE_DEPS linux-headers
 
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+
 WORKDIR /var/www/html
 
 COPY --from=composer /app/vendor vendor/
