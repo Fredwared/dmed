@@ -1,59 +1,140 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# API управления медиа
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API для загрузки, управления и раздачи изображений. Построен на Laravel 12, рассчитан на высокую нагрузку (100K+ загрузок в день).
 
-## About Laravel
+## Стек
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **PHP 8.4** с OPcache + JIT
+- **Laravel 12** + Sanctum (токен-авторизация) + Spatie Data (DTO)
+- **PostgreSQL 17** — основная БД
+- **Redis 7** — кеш, сессии, очереди
+- **RustFS (MinIO)** — S3-совместимое объектное хранилище
+- **Nginx 1.27** — обратный прокси
+- **Intervention Image 3** — конвертация в WebP через GD
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Архитектура
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
+Запрос → DTO (валидация) → Controller → Action (бизнес-логика) → Response DTO → JSON
+```
 
-## Learning Laravel
+- **DTO** (`app/Data/`) — Spatie Data классы для валидации запросов и формирования ответов
+- **Actions** (`app/Actions/`) — классы с единственной ответственностью для бизнес-логики
+- **Controllers** (`app/Http/Controllers/`) — тонкие, делегируют логику в Actions
+- **Models** (`app/Models/`) — Eloquent с типизированными свойствами
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## API эндпоинты
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Аутентификация
 
-## Laravel Sponsors
+| Метод | Эндпоинт | Авторизация | Описание |
+|-------|----------|-------------|----------|
+| POST | `/api/auth/register` | Нет | Регистрация, получение токена |
+| POST | `/api/auth/login` | Нет | Вход, получение токена |
+| POST | `/api/auth/logout` | Да | Отзыв текущего токена |
+| POST | `/api/auth/forgot-password` | Нет | Отправка ссылки для сброса |
+| POST | `/api/auth/reset-password` | Нет | Сброс пароля по токену |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Изображения
 
-### Premium Partners
+| Метод | Эндпоинт | Авторизация | Описание |
+|-------|----------|-------------|----------|
+| POST | `/api/images` | Да | Загрузка изображения (PNG/JPEG, макс. 5МБ) |
+| GET | `/api/images` | Да | Список ваших изображений (с пагинацией) |
+| GET | `/api/images/{id}` | Да | Детали изображения + подписанный URL |
+| DELETE | `/api/images/{id}` | Да | Удаление изображения |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Все защищённые эндпоинты требуют заголовок `Authorization: Bearer {token}`.
 
-## Contributing
+### Лимиты запросов
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- Авторизация (сброс пароля): **5 запросов/мин** на IP
+- Загрузка изображений: **100 запросов/мин** на пользователя
 
-## Code of Conduct
+## Обработка изображений
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- **Принимаемые форматы**: PNG, JPEG (макс. 5МБ)
+- **На выходе**: WebP (quality 80) — лучшее соотношение размер/качество
+- **Дедупликация**: SHA-256 хеш оригинального файла, уникален в рамках пользователя. Повторная загрузка того же файла вернёт существующую запись
+- **Путь хранения**: `images/{user_id}/{hash}.webp` — детерминированный, идемпотентный
+- **Раздача**: подписанные временные URL из S3 (60 мин)
+- **Race conditions**: обработка через `UniqueConstraintViolationException`
 
-## Security Vulnerabilities
+## Быстрый старт
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Требования
 
-## License
+- Docker и Docker Compose
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Установка
+
+```bash
+cp .env.example .env
+make setup
+```
+
+Это выполнит:
+1. Сборку всех контейнеров
+2. Запуск сервисов (PostgreSQL, Redis, RustFS, PHP-FPM, Nginx, Queue Worker)
+3. Генерацию ключа приложения
+4. Запуск миграций БД
+5. Создание бакета в S3
+
+API доступен по адресу `http://localhost` (порт настраивается через `APP_PORT` в `.env`).
+
+### Быстрая проверка
+
+```bash
+# Регистрация
+curl -s -X POST http://localhost/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@example.com","password":"password123","password_confirmation":"password123"}'
+
+# Загрузка изображения (замените TOKEN)
+curl -s -X POST http://localhost/api/images \
+  -H "Authorization: Bearer TOKEN" \
+  -F "image=@photo.jpg"
+```
+
+## Разработка
+
+### Основные команды
+
+```bash
+make up              # Запустить все сервисы
+make down            # Остановить все сервисы
+make restart         # Перезапустить сервисы
+make logs s=app      # Просмотр логов приложения
+make shell           # Зайти в контейнер приложения
+make test            # Запустить тесты
+make migrate         # Выполнить миграции
+make fresh           # Чистые миграции + сид
+make cache           # Очистить и пересобрать кеши
+```
+
+## Документация API
+
+Сгенерирована с помощью [Scribe](https://scribe.knuckles.wtf). Доступна по адресу `/docs` при запущенном приложении.
+
+Перегенерация после изменений:
+
+```bash
+make artisan c="scribe:generate"
+```
+
+Также генерируются:
+- Postman-коллекция по адресу `/docs.postman`
+- OpenAPI 3.0.3 спецификация по адресу `/docs.openapi`
+
+## Docker-сервисы
+
+| Сервис | Контейнер | Порт | Назначение |
+|--------|-----------|------|------------|
+| app | dmed-app | 9000 (внутренний) | PHP-FPM |
+| nginx | dmed-nginx | 80 | Обратный прокси |
+| postgres | dmed-postgres | 5432 | База данных |
+| redis | dmed-redis | 6379 | Кеш/Очереди/Сессии |
+| rustfs | dmed-rustfs | 9000, 9001 | S3-хранилище + консоль |
+| queue | dmed-queue | — | Фоновые задачи |
+
+Консоль RustFS (MinIO UI): `http://localhost:9001` — креды в `.env`.
