@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Data\Image\Response;
+
+use App\Models\Image;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Storage;
+use Spatie\LaravelData\Data;
+
+class ImageData extends Data
+{
+    public function __construct(
+        public int $id,
+        public string $original_filename,
+        public string $mime_type,
+        public int $file_size,
+        public int $width,
+        public int $height,
+        public string $url,
+        public CarbonImmutable $created_at,
+    ) {}
+
+    public static function fromImage(Image $image): self
+    {
+        $disk = Storage::disk('s3');
+
+        try {
+            $url = $disk->temporaryUrl($image->storage_path, now()->addHour());
+        } catch (\RuntimeException) {
+            $url = $disk->url($image->storage_path);
+        }
+
+        return new self(
+            id: $image->id,
+            original_filename: $image->original_filename,
+            mime_type: $image->mime_type,
+            file_size: $image->file_size,
+            width: $image->width,
+            height: $image->height,
+            url: $url,
+            created_at: CarbonImmutable::parse($image->created_at),
+        );
+    }
+}
