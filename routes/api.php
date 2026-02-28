@@ -18,7 +18,9 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/images', [ImageController::class, 'store'])
+    Route::post('/images/upload-url', [ImageController::class, 'uploadUrl'])
+        ->middleware('throttle:image-uploads');
+    Route::post('/images/confirm', [ImageController::class, 'confirm'])
         ->middleware('throttle:image-uploads');
     Route::get('/images', [ImageController::class, 'index']);
     Route::get('/images/{image}', [ImageController::class, 'show']);

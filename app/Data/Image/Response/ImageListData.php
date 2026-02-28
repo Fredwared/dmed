@@ -18,6 +18,9 @@ class ImageListData extends Data
         public int $total,
     ) {}
 
+    /**
+     * @param  LengthAwarePaginator<int, \App\Models\Image>  $paginator
+     */
     public static function fromPaginator(LengthAwarePaginator $paginator): self
     {
         return new self(
