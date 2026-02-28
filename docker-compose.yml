@@ -13,8 +13,6 @@ services:
     environment:
       DB_HOST: postgres
       REDIS_HOST: redis
-      AWS_ENDPOINT: http://rustfs:9000
-      AWS_URL: http://rustfs:9000
       AWS_USE_PATH_STYLE_ENDPOINT: "true"
     depends_on:
       postgres:
