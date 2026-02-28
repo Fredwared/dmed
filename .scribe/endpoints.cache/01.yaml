@@ -10,7 +10,7 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/images
+    uri: api/images/upload-url
     metadata:
       custom: []
       groupName: Images
@@ -20,40 +20,28 @@ endpoints:
         All endpoints require authentication. Users can only manage their own images.
       subgroup: ''
       subgroupDescription: ''
-      title: 'Upload Image'
+      title: 'Get Upload URL'
       description: |-
-        Upload a PNG or JPEG image (max 5MB). The image is compressed to WebP format.
-        Duplicate uploads (same file content) return the existing image instead of creating a new one.
+        Get a pre-signed S3 URL for direct file upload. The client should PUT the file
+        directly to the returned URL, then call the confirm endpoint with the file_key.
       authenticated: true
       deprecated: false
     headers:
       Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: multipart/form-data
+      Content-Type: application/json
       Accept: application/json
     urlParameters: []
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      image:
-        custom: []
-        name: image
-        description: 'The image file to upload. Must be JPEG or PNG, max 5MB.'
-        required: true
-        example: null
-        type: file
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
+    bodyParameters: []
     cleanBodyParameters: []
-    fileParameters:
-      image: null
+    fileParameters: []
     responses:
       -
         custom: []
-        status: 201
-        content: '{"id":1,"original_filename":"photo.jpg","mime_type":"image/webp","file_size":204800,"width":1920,"height":1080,"url":"https://s3.example.com/images/1/abc123.webp?signature=...","created_at":"2026-02-28T10:00:00.000000Z"}'
+        status: 200
+        content: '{"upload_url":"https://s3.example.com/uploads/1/uuid.jpg?X-Amz-Signature=...","file_key":"uploads/1/uuid.jpg"}'
         headers: []
         description: ''
       -
@@ -65,9 +53,68 @@ endpoints:
       -
         custom: []
         status: 422
-        content: '{"message":"The image field must be a file of type: jpeg, jpg, png.","errors":{"image":["The image field must be a file of type: jpeg, jpg, png."]}}'
+        content: '{"message":"The mime type field must be one of: image/jpeg, image/png.","errors":{"mime_type":["The mime type field must be one of: image/jpeg, image/png."]}}'
         headers: []
         description: 'Validation error'
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/images/confirm
+    metadata:
+      custom: []
+      groupName: Images
+      groupDescription: |-
+
+        Endpoints for uploading, listing, viewing, and deleting images.
+        All endpoints require authentication. Users can only manage their own images.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Confirm Upload'
+      description: |-
+        Confirm that a file has been uploaded to S3. This validates the file,
+        creates the database record, and dispatches background processing (WebP compression).
+        Duplicate files (same content) return the existing image.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"id":1,"original_filename":"uuid.jpg","mime_type":"image/jpeg","file_size":204800,"width":null,"height":null,"url":null,"status":"pending","created_at":"2026-02-28T10:00:00.000000Z"}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers: []
+        description: Unauthenticated
+      -
+        custom: []
+        status: 422
+        content: '{"message":"The given data was invalid.","errors":{"file_key":["File not found on storage."]}}'
+        headers: []
+        description: 'File not found'
     responseFields: []
     auth:
       - headers
@@ -121,7 +168,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"data":[{"id":1,"original_filename":"photo.jpg","mime_type":"image/webp","file_size":204800,"width":1920,"height":1080,"url":"https://s3.example.com/images/1/abc123.webp?signature=...","created_at":"2026-02-28T10:00:00.000000Z"}],"current_page":1,"last_page":1,"per_page":20,"total":1}'
+        content: '{"data":[{"id":1,"original_filename":"photo.jpg","mime_type":"image/webp","file_size":204800,"width":1920,"height":1080,"url":"https://s3.example.com/images/1/abc123.webp?signature=...","status":"ready","created_at":"2026-02-28T10:00:00.000000Z"}],"current_page":1,"last_page":1,"per_page":20,"total":1}'
         headers: []
         description: ''
       -
@@ -195,7 +242,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"id":1,"original_filename":"photo.jpg","mime_type":"image/webp","file_size":204800,"width":1920,"height":1080,"url":"https://s3.example.com/images/1/abc123.webp?signature=...","created_at":"2026-02-28T10:00:00.000000Z"}'
+        content: '{"id":1,"original_filename":"photo.jpg","mime_type":"image/webp","file_size":204800,"width":1920,"height":1080,"url":"https://s3.example.com/images/1/abc123.webp?signature=...","status":"ready","created_at":"2026-02-28T10:00:00.000000Z"}'
         headers: []
         description: ''
       -
