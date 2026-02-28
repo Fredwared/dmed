@@ -17,6 +17,9 @@ php artisan migrate --force
 echo "── Creating S3 bucket ──"
 php artisan app:create-bucket
 
+echo "── Generating API docs ──"
+php artisan scribe:generate --force 2>/dev/null || true
+
 echo "── Caching config ──"
 php artisan config:cache
 php artisan route:cache
