@@ -15,18 +15,53 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @group Authentication
+ *
+ * Endpoints for user registration, login, logout, and password reset.
+ */
 class AuthController extends Controller
 {
+    /**
+     * Register
+     *
+     * Create a new user account and return an auth token.
+     *
+     * @unauthenticated
+     *
+     * @response 201 {"user":{"id":1,"name":"John Doe","email":"john@example.com","created_at":"2026-02-28T10:00:00.000000Z"},"token":{"token":"1|abc123...","type":"bearer"}}
+     * @response 422 scenario="Validation error" {"message":"The email has already been taken.","errors":{"email":["The email has already been taken."]}}
+     */
     public function register(RegisterData $data, RegisterAction $action): JsonResponse
     {
         return response()->json($action->execute($data), 201);
     }
 
+    /**
+     * Login
+     *
+     * Authenticate a user and return an auth token.
+     *
+     * @unauthenticated
+     *
+     * @response 200 {"user":{"id":1,"name":"John Doe","email":"john@example.com","created_at":"2026-02-28T10:00:00.000000Z"},"token":{"token":"1|abc123...","type":"bearer"}}
+     * @response 422 scenario="Invalid credentials" {"message":"The given data was invalid.","errors":{"email":["These credentials do not match our records."]}}
+     */
     public function login(LoginData $data, LoginAction $action): JsonResponse
     {
         return response()->json($action->execute($data));
     }
 
+    /**
+     * Logout
+     *
+     * Revoke the current access token.
+     *
+     * @authenticated
+     *
+     * @response 200 {"message":"Logged out successfully"}
+     * @response 401 scenario="Unauthenticated" {"message":"Unauthenticated."}
+     */
     public function logout(Request $request, LogoutAction $action): JsonResponse
     {
         $action->execute($request->user());
@@ -34,6 +69,16 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out successfully']);
     }
 
+    /**
+     * Forgot Password
+     *
+     * Send a password reset link to the given email address.
+     *
+     * @unauthenticated
+     *
+     * @response 200 {"message":"Password reset link sent"}
+     * @response 422 scenario="Validation error" {"message":"The given data was invalid.","errors":{"email":["We can't find a user with that email address."]}}
+     */
     public function forgotPassword(ResetPasswordRequestData $data, SendResetLinkAction $action): JsonResponse
     {
         $action->execute($data);
@@ -41,6 +86,16 @@ class AuthController extends Controller
         return response()->json(['message' => 'Password reset link sent']);
     }
 
+    /**
+     * Reset Password
+     *
+     * Reset the user's password using a valid reset token.
+     *
+     * @unauthenticated
+     *
+     * @response 200 {"message":"Password reset successfully"}
+     * @response 422 scenario="Invalid token" {"message":"The given data was invalid.","errors":{"email":["This password reset token is invalid."]}}
+     */
     public function resetPassword(ResetPasswordData $data, ResetPasswordAction $action): JsonResponse
     {
         $action->execute($data);
